@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+	<name>changedefaultcombination</name>
+	<displayName><![CDATA[Change default combination]]></displayName>
+	<version><![CDATA[0.0.1]]></version>
+	<description><![CDATA[Change default combination when it\'s out of stock]]></description>
+	<author><![CDATA[K. Pianka]]></author>
+	<tab><![CDATA[administration]]></tab>
+	<is_configurable>1</is_configurable>
+	<need_instance>1</need_instance>
+</module>
