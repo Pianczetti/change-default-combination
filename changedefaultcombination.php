@@ -24,6 +24,8 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+use PrestaShop\Module\ChangeDefaultCombination\Selector\CombinationSelector;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -50,7 +52,7 @@ class Changedefaultcombination extends Module
         $this->displayName = $this->l('Change default combination when out of stock');
         $this->description = $this->l('Module allows You to change default combination when the combination runs out of stock.');
 
-        $this->ps_versions_compliancy = array('min' => '1.7', 'max' => '8.0');
+        $this->ps_versions_compliancy = array('min' => '1.7', 'max' => '8.99.99');
     }
 
     /**
@@ -110,7 +112,7 @@ class Changedefaultcombination extends Module
                 'input' => [
                     [
                         'type' => 'radio',
-                        'label' => $this->l('Rodzaj domyślnej kombinacji'),
+                        'label' => $this->l('Kombinacja która ma zostać ustawiona, po wyczerpaniu zapasów w domyślnej kombinacji'),
                         'name' => 'CHANGEDEFAULTCOMBINATION_SETTING',
                         'class' => 't',
                         'required'  => true,
@@ -195,62 +197,63 @@ class Changedefaultcombination extends Module
     public function hookActionUpdateQuantity($params)
     {
         $id = $params['id_product'];
-       // $id_attribute = $params['id_product_attribute'];
+        $setting = (int)Configuration::get('CHANGEDEFAULTCOMBINATION_SETTING');
+
+        // $default_attribute_id = Product::getDefaultAttribute($id);
+        // $default_attribute_stock = StockAvailable::getQuantityAvailableByProduct($id, $default_attribute_id);
+
+        // $combinations = $product->getAttributeCombinations((int)Configuration::get('PS_LANG_DEFAULT'));
     
-        $product = new Product($id);
-  
-        $default_attribute_id = Product::getDefaultAttribute($id);
-        $default_attribute_stock = StockAvailable::getQuantityAvailableByProduct($id, $default_attribute_id);
-    
-        if($default_attribute_stock <= 0){
-            $combinations = $product->getAttributeCombinations((int)Configuration::get('PS_LANG_DEFAULT'));
+        // if($default_attribute_stock <= 0){
+        //     // Inicjalizacja zmiennych pomocniczych
+        //     $attribute_stock = null;
+        //     $bestCombination = null;
+        //     $bestPrice = null;
+        //     $bestStock = null;
 
-            $attribute_stock = null;
-            // Pobranie wartości z konfiguracji
-            $setting = (int)Configuration::get('CHANGEDEFAULTCOMBINATION_SETTING');
+        //     foreach ($combinations as $combination) {
+        //         $attribute_id = $combination['id_product_attribute'];
+        //         // Pobranie stanu magazynowego i ceny dla kombinacji
+        //         $attribute_stock = StockAvailable::getQuantityAvailableByProduct($id, $attribute_id);
+        //         $attribute_price = Product::getPriceStatic($id, true, $attribute_id);
 
-            // Inicjalizacja zmiennych pomocniczych
-            $bestCombination = null;
-            $bestPrice = null;
-            $bestStock = null;
+        //         // Warunki w zależności od ustawienia
+        //         if($attribute_id !== $default_attribute_id){
+        //             switch ($setting) {
+        //                 case 0: // Najwyższa cena
+        //                     if ($bestCombination === null || $attribute_price > $bestPrice && $attribute_stock > 0) {
+        //                         $bestCombination = $combination;
+        //                         $bestPrice = $attribute_price;
+        //                     }
+        //                     break;
 
-            foreach ($combinations as $combination) {
-                $attribute_id = $combination['id_product_attribute'];
-                // Pobranie stanu magazynowego i ceny dla kombinacji
-                $attribute_stock = StockAvailable::getQuantityAvailableByProduct($id, $attribute_id);
-                $attribute_price = Product::getPriceStatic($id, true, $attribute_id);
+        //                 case 1: // Najniższa cena
+        //                     if ($bestCombination === null || $attribute_price < $bestPrice && $attribute_stock > 0) {
+        //                         $bestCombination = $combination;
+        //                         $bestPrice = $attribute_price;
+        //                     }
+        //                     break;
+        //                 case 2: // Najwyższy stan magazynowy
+        //                     if ($bestCombination === null|| $attribute_stock > $bestStock && $attribute_stock > 0) {
+        //                         $bestCombination = $combination;
+        //                         $bestStock = $attribute_stock;
+        //                     }
+        //                     break;
 
-                // Warunki w zależności od ustawienia
-                switch ($setting) {
-                    case 0: // Najwyższa cena
-                        if ($bestCombination === null || $attribute_price > $bestPrice && $attribute_stock > 0) {
-                            $bestCombination = $combination;
-                            $bestPrice = $attribute_price;
-                        }
-                        break;
+        //                 case 3: // Najniższy stan magazynowy
+        //                     if (($bestCombination === null  && $attribute_id !== $default_attribute_id) || $attribute_stock < $bestStock && $attribute_stock > 0) {
+        //                         $bestCombination = $combination;
+        //                         $bestStock = $attribute_stock;
+        //                     }
+        //                     break;
+        //             }
+        //         }
+        //     }
+        // }
 
-                    case 1: // Najniższa cena
-                        if ($bestCombination === null || $attribute_price < $bestPrice && $attribute_stock > 0) {
-                            $bestCombination = $combination;
-                            $bestPrice = $attribute_price;
-                        }
-                        break;
-                    case 2: // Najwyższy stan magazynowy
-                        if ($bestCombination === null || $attribute_stock > $bestStock && $attribute_stock > 0) {
-                            $bestCombination = $combination;
-                            $bestStock = $attribute_stock;
-                        }
-                        break;
-
-                    case 3: // Najniższy stan magazynowy
-                        if ($bestCombination === null || $attribute_stock < $bestStock && $attribute_stock > 0) {
-                            $bestCombination = $combination;
-                            $bestStock = $attribute_stock;
-                        }
-                        break;
-                }
-            }
-
+        $bestCombination = CombinationSelector::getBestCombination($id, $setting);
+        
+        if($bestCombination){
             if(StockAvailable::getQuantityAvailableByProduct($id, $bestCombination['id_product_attribute']) > 0){
                 $bestAttribute_id = $bestCombination['id_product_attribute'];
 
